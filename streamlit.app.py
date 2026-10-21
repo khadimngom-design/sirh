@@ -104,7 +104,7 @@ with onglet1:
     elif action == "Consulter/Modifier":
         cni_m = st.selectbox("Choisir l'ASP :", options=df['Matricule_CNI'].values, key="mod_rh")
         if cni_m:
-            idx = df[df['Matricule_CNI'] == cni_m].index
+            idx = df[df['Matricule_CNI'] == cni_m].index[0]
             st.markdown(f"**Modification de l'agent :** {df.at[idx, 'Prénom']} {df.at[idx, 'Nom']} (`{df.at[idx, 'Statut']}`)")
             col1, col2 = st.columns(2)
             with col1:
@@ -129,7 +129,7 @@ with onglet2:
     st.subheader("🏅 Bureau des Primes DRH")
     prime_cni = st.selectbox("Sélectionner l'ASP (Par CNI) :", options=df[df['Statut']=='Actif']['Matricule_CNI'].values, key="p_tab")
     if prime_cni:
-        idx_p = df[df['Matricule_CNI'] == prime_cni].index
+        idx_p = df[df['Matricule_CNI'] == prime_cni].index[0]
         st.write(f"Agent : {df.at[idx_p, 'Prénom']} {df.at[idx_p, 'Nom']} | Prime actuelle : {df.at[idx_p, 'Prime']} F")
         has_p = st.checkbox("Accorder une prime", value=bool(df.at[idx_p, 'Beneficie_Prime']))
         m_p = st.number_input("Montant (F CFA)", min_value=0, step=5000, value=int(df.at[idx_p, 'Prime'])) if has_p else 0
@@ -147,7 +147,7 @@ with onglet3:
     st.subheader("⚖️ Greffe du Conseil de Discipline")
     disc_cni = st.selectbox("Sélectionner l'ASP convoqué :", options=df['Matricule_CNI'].values, key="d_tab")
     if disc_cni:
-        idx_d = df[df['Matricule_CNI'] == disc_cni].index
+        idx_d = df[df['Matricule_CNI'] == disc_cni].index[0]
         st.info(f"**Agent :** {df.at[idx_d, 'Prénom']} {df.at[idx_d, 'Nom']} | **Statut actuel :** `{df.at[idx_d, 'Statut']}`")
         
         type_decision = st.selectbox("Décision du Conseil :", ["Sanction Pécuniaire", "Radiation du Conseil", "Réintégration de l'Agent"])
@@ -184,24 +184,55 @@ with onglet3:
                 st.rerun()
 
 # ==============================================================================
-# ONGLET 4 : GESTION DES DEMISSIONS & DECES
+# ONGLET 4 : GESTION DES DÉMISSIONS & DÉCÈS
 # ==============================================================================
-st.dataframe(df_actifs[['Matricule_CNI', 'Nom', 'Prénom', 'Canal_Paiement', 'Compte_Numero', 'Pécule_Base', 'Prime', 'Cotisation_Mutuelle', 'Sanction_Discipline', 'Net_A_Payer']], use_container_width=True)
-st.write("---")
-st.markdown("#### 📥 Fichiers d'ordres de virement bancaires")
-def to_excel(df_b):
-out = io.BytesIO()
-with pd.ExcelWriter(out, engine='openpyxl') as w:
-df_b.to_excel(w, index=False, sheet_name='Virements')
-return out.getvalue()
-c1, c2, c3 = st.columns(3)
-with c1:
-df_boa = df_actifs[df_actifs['Canal_Paiement'] == 'BOA']
-st.download_button(label=f"BOA ({len(df_boa)} agents)", data=to_excel(df_boa[['Matricule_CNI', 'Nom', 'Prénom', 'Compte_Numero', 'Net_A_Payer']]), file_name="virements_BOA.xlsx", mime="application/vnd.ms-excel")
-with c2:
-df_bnde = df_actifs[df_actifs['Canal_Paiement'] == 'BNDE']
-st.download_button(label=f"BNDE ({len(df_bnde)} agents)", data=to_excel(df_bnde[['Matricule_CNI', 'Nom', 'Prénom', 'Compte_Numero', 'Net_A_Payer']]), file_name="virements_BNDE.xlsx", mime="application/vnd.ms-excel")
-with c3:
-df_om = df_actifs[df_actifs['Canal_Paiement'] == 'Orange Money']
+with onglet4:
+    st.subheader("🚪 Bureau des Sorties de Effectifs (Démission / Décès)")
+    cni_exit = st.selectbox("Sélectionner l'ASP concerné :", options=df[df['Statut']=='Actif']['Matricule_CNI'].values, key="exit_tab")
+    if cni_exit:
+        idx_e = df[df['Matricule_CNI'] == cni_exit].index[0]
+        st.write(f"Agent : {df.at[idx_e, 'Prénom']} {df.at[idx_e, 'Nom']}")
+        motif_sortie = st.selectbox("Motif de la sortie :", ["Démission", "Décès", "Fin de contrat"])
+        if st.button("Valider la sortie d'effectif"):
+            df.at[idx_e, 'Statut'] = "Inactif"
+            df.at[idx_e, 'Motif_Sortie'] = motif_sortie
+            st.session_state.df_asp = df
+            st.warning(f"Agent marqué comme inactif pour motif : {motif_sortie}")
+            st.rerun()
 
-st.download_button(label=f"Orange Money ({len(df_om)} agents)", data=to_excel(df_om[['Matricule_CNI', 'Nom', 'Prénom', 'Compte_Numero', 'Net_A_Payer']]), file_name="virements_OrangeMoney.xlsx", mime="application/vnd.ms-excel")
+# ==============================================================================
+# ONGLET 5 : FICHE & PDF
+# ==============================================================================
+with onglet5:
+    st.subheader("🗂️ Génération de Fiche d'Agent")
+    cni_pdf = st.selectbox("Sélectionner l'ASP :", options=df['Matricule_CNI'].values, key="pdf_tab")
+    if cni_pdf:
+        agent = df[df['Matricule_CNI'] == cni_pdf].iloc[0]
+        st.json(agent.to_dict())
+
+# ==============================================================================
+# ONGLET 6 : SOLDE GLOBALE & VIREMENTS
+# ==============================================================================
+with onglet6:
+    st.subheader("💶 Solde Globale et Ordres de Virement")
+    df_actifs = df[df['Statut'] == 'Actif']
+    st.dataframe(df_actifs[['Matricule_CNI', 'Nom', 'Prénom', 'Canal_Paiement', 'Compte_Numero', 'Pécule_Base', 'Prime', 'Cotisation_Mutuelle', 'Sanction_Discipline', 'Net_A_Payer']], use_container_width=True)
+    st.write("---")
+    st.markdown("#### 📥 Fichiers d'ordres de virement bancaires")
+
+    def to_excel(df_b):
+        out = io.BytesIO()
+        with pd.ExcelWriter(out, engine='openpyxl') as w:
+            df_b.to_excel(w, index=False, sheet_name='Virements')
+        return out.getvalue()
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        df_boa = df_actifs[df_actifs['Canal_Paiement'] == 'BOA']
+        st.download_button(label=f"BOA ({len(df_boa)} agents)", data=to_excel(df_boa[['Matricule_CNI', 'Nom', 'Prénom', 'Compte_Numero', 'Net_A_Payer']]), file_name="virements_BOA.xlsx", mime="application/vnd.ms-excel")
+    with c2:
+        df_bnde = df_actifs[df_actifs['Canal_Paiement'] == 'BNDE']
+        st.download_button(label=f"BNDE ({len(df_bnde)} agents)", data=to_excel(df_bnde[['Matricule_CNI', 'Nom', 'Prénom', 'Compte_Numero', 'Net_A_Payer']]), file_name="virements_BNDE.xlsx", mime="application/vnd.ms-excel")
+    with c3:
+        df_om = df_actifs[df_actifs['Canal_Paiement'] == 'Orange Money']
+        st.download_button(label=f"Orange Money ({len(df_om)} agents)", data=to_excel(df_om[['Matricule_CNI', 'Nom', 'Prénom', 'Compte_Numero', 'Net_A_Payer']]), file_name="virements_OrangeMoney.xlsx", mime="application/vnd.ms-excel")
