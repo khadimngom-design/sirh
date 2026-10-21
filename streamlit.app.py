@@ -61,7 +61,7 @@ def calculer_net(row):
 
 df['Net_A_Payer'] = df.apply(calculer_net, axis=1)
 
-# --- NAVIGATION DU SIRH (NOMS CORRIGÉS) ---
+# --- NAVIGATION DU SIRH ---
 onglet1, onglet2, onglet3, onglet4, onglet5, onglet6 = st.tabs([
     "👤 Recrutement", "🏅 Primes", "⚖️ Discipline", "🚪 Démissions/Décès", "🗂️ Fiche & PDF", "💶 Solde Globale"
 ])
@@ -114,7 +114,10 @@ with onglet1:
                 e_aff = st.text_input("Lieu d'affectation", value=df.at[idx, 'Lieu_Affectation'])
                 e_canal = st.selectbox("Banque/Moyen", ['Orange Money', 'BOA', 'BNDE'], index=['Orange Money', 'BOA', 'BNDE'].index(df.at[idx, 'Canal_Paiement']))
             if st.button("💾 Enregistrer"):
-                df.at[idx, 'Prénom'], df.at[idx, 'Nom'], df.at[idx, 'Lieu_Affectation'], df.at[idx, 'Canal_Paiement'] = e_prenom, e_nom, e_aff, e_canal
+                df.at[idx, 'Prénom'] = e_prenom
+                df.at[idx, 'Nom'] = e_nom
+                df.at[idx, 'Lieu_Affectation'] = e_aff
+                df.at[idx, 'Canal_Paiement'] = e_canal
                 st.session_state.df_asp = df
                 st.success("Données enregistrées.")
                 st.rerun()
@@ -131,7 +134,8 @@ with onglet2:
         has_p = st.checkbox("Accorder une prime", value=bool(df.at[idx_p, 'Beneficie_Prime']))
         m_p = st.number_input("Montant (F CFA)", min_value=0, step=5000, value=int(df.at[idx_p, 'Prime'])) if has_p else 0
         if st.button("⚖️ Fixer la prime"):
-            df.at[idx_p, 'Beneficie_Prime'], df.at[idx_p, 'Prime'] = has_p, m_p
+            df.at[idx_p, 'Beneficie_Prime'] = has_p
+            df.at[idx_p, 'Prime'] = m_p
             st.session_state.df_asp = df
             st.success("Prime mise à jour.")
             st.rerun()
@@ -182,4 +186,22 @@ with onglet3:
 # ==============================================================================
 # ONGLET 4 : GESTION DES DEMISSIONS & DECES
 # ==============================================================================
-with onglet4:
+st.dataframe(df_actifs[['Matricule_CNI', 'Nom', 'Prénom', 'Canal_Paiement', 'Compte_Numero', 'Pécule_Base', 'Prime', 'Cotisation_Mutuelle', 'Sanction_Discipline', 'Net_A_Payer']], use_container_width=True)
+st.write("---")
+st.markdown("#### 📥 Fichiers d'ordres de virement bancaires")
+def to_excel(df_b):
+out = io.BytesIO()
+with pd.ExcelWriter(out, engine='openpyxl') as w:
+df_b.to_excel(w, index=False, sheet_name='Virements')
+return out.getvalue()
+c1, c2, c3 = st.columns(3)
+with c1:
+df_boa = df_actifs[df_actifs['Canal_Paiement'] == 'BOA']
+st.download_button(label=f"BOA ({len(df_boa)} agents)", data=to_excel(df_boa[['Matricule_CNI', 'Nom', 'Prénom', 'Compte_Numero', 'Net_A_Payer']]), file_name="virements_BOA.xlsx", mime="application/vnd.ms-excel")
+with c2:
+df_bnde = df_actifs[df_actifs['Canal_Paiement'] == 'BNDE']
+st.download_button(label=f"BNDE ({len(df_bnde)} agents)", data=to_excel(df_bnde[['Matricule_CNI', 'Nom', 'Prénom', 'Compte_Numero', 'Net_A_Payer']]), file_name="virements_BNDE.xlsx", mime="application/vnd.ms-excel")
+with c3:
+df_om = df_actifs[df_actifs['Canal_Paiement'] == 'Orange Money']
+
+st.download_button(label=f"Orange Money ({len(df_om)} agents)", data=to_excel(df_om[['Matricule_CNI', 'Nom', 'Prénom', 'Compte_Numero', 'Net_A_Payer']]), file_name="virements_OrangeMoney.xlsx", mime="application/vnd.ms-excel")
