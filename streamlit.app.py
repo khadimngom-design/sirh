@@ -1,5 +1,3 @@
-
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -10,37 +8,37 @@ st.set_page_config(page_title="Système National ASP Sénégal", layout="wide")
 st.title("🇸🇳 Système Intégré de Gestion des Volontaires ASP")
 st.markdown("### Direction des Ressources Humaines et de la Solde - Sénégal")
 
-# --- INITIALISATION DE LA BASE DE DONNÉES EN SESSION ---
+# --- INITIALISATION DE LA BASE DE DONNÉES EN SESSION (FORMAT STRUCTURÉ SÉCURISÉ) ---
 if 'df_asp' not in st.session_state:
-    np.random.seed(42)
-    regions = ['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Diourbel', 'Tambacounda']
-    canaux = ['BOA', 'Orange Money', 'BNDE']
+    # Création des colonnes de base
+    cni_list = ["1234567890121", "1234567890122", "1234567890123", "1234567890124", "1234567890125", "1234567890126", "1234567890127", "1234567890128", "1234567890129", "1234567890130"]
+    noms = ['Diop', 'Ndiaye', 'Sow', 'Fall', 'Gueye', 'Diallo', 'Faye', 'Cissé', 'Bâ', 'Sané']
+    prenoms = ['Moussa', 'Fatou', 'Ousmane', 'Awa', 'Amadou', 'Khady', 'Ibrahima', 'Oumar', 'Mariama', 'Aliou']
+    regions = ['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Diourbel', 'Tambacounda', 'Louga', 'Fatick', 'Kolda']
+    canaux = ['BOA', 'Orange Money', 'BNDE', 'BOA', 'Orange Money', 'BNDE', 'BOA', 'Orange Money', 'BNDE', 'Orange Money']
+    comptes = ['SN012-001', '771234567', 'SN056-002', 'SN012-003', '779876543', 'SN056-004', 'SN012-005', '775554433', 'SN056-006', '771112233']
     
-    # Création propre de la simulation de départ sans laisser de case vide
-    df_init = pd.DataFrame({
-        'Matricule_CNI': [f"1{np.random.randint(100, 999)}199{np.random.randint(10,99)}{np.random.randint(10000, 99999)}" for i in range(10)],
-        'Nom': ['Diop', 'Ndiaye', 'Sow', 'Fall', 'Gueye', 'Diallo', 'Faye', 'Cissé', 'Bâ', 'Sané'],
-        'Prénom': ['Moussa', 'Fatou', 'Ousmane', 'Awa', 'Amadou', 'Khady', 'Ibrahima', 'Oumar', 'Mariama', 'Aliou'],
-        'Date_Naissance': ['1998-05-12'] * 10,
-        'Lieu_Naissance': ['Dakar', 'Thiès', 'Saint-Louis', 'Kaolack', 'Ziguinchor', 'Diourbel', 'Rufisque', 'Pikine', 'Mbour', 'Bignona'],
-        'Date_Engagement': ['2024-01-01'] * 10,
-        'Région': np.random.choice(regions, 10),
-        'Lieu_Affectation': np.random.choice(['Commissariat Central', 'Préfecture', 'Mairie', 'Lycée'], 10),
-        'Canal_Paiement': np.random.choice(canaux, 10),
-        'Compte_Numero': [f"SN012-{np.random.randint(10000, 99999)}" for _ in range(10)],
-        'Pécule_Base': [90000] * 10,
-        'Beneficie_Prime': [True, False, True, False, False, True, False, False, True, False],
-        'Prime':,
-        'Cotisation_Mutuelle': [2500] * 10,
-        'Retenue_Pret':,
-        'Sanction_Discipline': [0] * 10,
-        'Motif_Action': ["RAS"] * 10,
-        'Conges_Restants': [30] * 10,
-        'Statut': ['Actif'] * 10
-    })
-    
-    mask_om = df_init['Canal_Paiement'] == 'Orange Money'
-    df_init.loc[mask_om, 'Compte_Numero'] = [f"77 {np.random.randint(100, 999)} {np.random.randint(10, 99)} {np.random.randint(10, 99)}" for _ in range(mask_om.sum())]
+    # Construction sécurisée ligne par ligne du tableau de test
+    df_init = pd.DataFrame()
+    df_init['Matricule_CNI'] = cni_list
+    df_init['Nom'] = noms
+    df_init['Prénom'] = prenoms
+    df_init['Date_Naissance'] = "1998-05-12"
+    df_init['Lieu_Naissance'] = "Sénégal"
+    df_init['Date_Engagement'] = "2024-01-01"
+    df_init['Région'] = regions
+    df_init['Lieu_Affectation'] = "Commissariat"
+    df_init['Canal_Paiement'] = canaux
+    df_init['Compte_Numero'] = comptes
+    df_init['Pécule_Base'] = 90000
+    df_init['Beneficie_Prime'] = [True, False, True, False, False, True, False, False, True, False]
+    df_init['Prime'] = [15000, 0, 20000, 0, 0, 10000, 0, 0, 25000, 0]
+    df_init['Cotisation_Mutuelle'] = 2500
+    df_init['Retenue_Pret'] = [0, 5000, 0, 0, 10000, 0, 0, 0, 0, 0]
+    df_init['Sanction_Discipline'] = 0
+    df_init['Motif_Action'] = "RAS"
+    df_init['Conges_Restants'] = 30
+    df_init['Statut'] = "Actif"
     
     st.session_state.df_asp = df_init
 
@@ -63,7 +61,12 @@ def calculer_net(row):
 df['Net_A_Payer'] = df.apply(calculer_net, axis=1)
 
 # --- NAVIGATION PAR ONGLETS ---
-onglet1, onglet2, onglet3 = st.tabs(["📋 Registre & Recrutement", "📅 Gestion des Congés", "💶 Paie & Primes Secteur"])
+onglet1, onglet2, onglet3, onglet4 = st.tabs([
+    "👤 Registre & Recrutement", 
+    "🏅 Attribution des Primes", 
+    "📅 Gestion des Congés", 
+    "💶 Paie & Sécurité Globale"
+])
 
 # ==============================================================================
 # ONGLET 1 : RECRUTEMENT ET MODIFICATION
@@ -73,51 +76,45 @@ with onglet1:
     choix_action = st.radio("Action RH :", ["Consulter & Modifier un Profil", "Créer / Recruter un nouvel ASP"], horizontal=True)
     
     if choix_action == "Créer / Recruter un nouvel ASP":
-        st.markdown("#### Formulaire d'engagement (Le numéro de CNI fera office de Matricule)")
+        st.markdown("#### Formulaire d'engagement (Matricule = CNI)")
         col_r1, col_r2 = st.columns(2)
         with col_r1:
-            n_cni = st.text_input("Numéro de Carte d'Identité (CNI) *")
+            n_cni = st.text_input("Numéro de CNI *")
             n_prenom = st.text_input("Prénom *")
             n_nom = st.text_input("Nom de famille *")
             n_dn = st.date_input("Date de naissance", value=pd.to_datetime("2000-01-01"))
-            n_ln = st.text_input("Lieu de naissance")
         with col_r2:
+            n_ln = st.text_input("Lieu de naissance")
             n_de = st.date_input("Date d'engagement officiel", value=pd.to_datetime("2026-01-01"))
             n_reg = st.selectbox("Région d'affectation", ['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Diourbel', 'Tambacounda'])
             n_aff = st.text_input("Lieu précis d'affectation")
             n_canal = st.selectbox("Mode de paiement initial", ['Orange Money', 'BOA', 'BNDE'])
             
-            st.markdown("**Configuration de la Prime DRH**")
-            n_has_prime = st.checkbox("Cet agent est-il bénéficiaire d'une prime ?")
-            n_montant_prime = 0
-            if n_has_prime:
-                n_montant_prime = st.number_input("Montant de la prime déterminé par la DRH (F CFA) :", min_value=0, step=5000, value=0)
-            
         if st.button("💾 Enregistrer le Recrutement"):
             if n_cni and n_prenom and n_nom:
                 if n_cni in df['Matricule_CNI'].values:
-                    st.error("🛑 Erreur : Un volontaire avec ce numéro de CNI existe déjà dans la base.")
+                    st.error("🛑 Erreur : Un volontaire avec ce numéro de CNI existe déjà.")
                 else:
                     nouvel_asp = {
                         'Matricule_CNI': n_cni, 'Nom': n_nom, 'Prénom': n_prenom,
                         'Date_Naissance': str(n_dn), 'Lieu_Naissance': n_ln, 'Date_Engagement': str(n_de),
                         'Région': n_reg, 'Lieu_Affectation': n_aff, 'Canal_Paiement': n_canal,
                         'Compte_Numero': "A renseigner", 'Pécule_Base': 90000, 
-                        'Beneficie_Prime': n_has_prime, 'Prime': n_montant_prime if n_has_prime else 0,
+                        'Beneficie_Prime': False, 'Prime': 0,
                         'Cotisation_Mutuelle': 2500, 'Retenue_Pret': 0, 'Sanction_Discipline': 0,
                         'Motif_Action': "Nouveau recrutement", 'Conges_Restants': 30, 'Statut': 'Actif'
                     }
                     df = pd.concat([df, pd.DataFrame([nouvel_asp])], ignore_index=True)
                     st.session_state.df_asp = df
-                    st.success(f"L'ASP a été enregistré avec succès sous le Matricule CNI : {n_cni}")
+                    st.success(f"L'ASP a été enregistré sous le Matricule CNI : {n_cni}")
                     st.rerun()
             else:
                 st.error("Veuillez remplir les champs obligatoires (*)")
 
     elif choix_action == "Consulter & Modifier un Profil":
-        matricule_modif = st.selectbox("Sélectionnez l'ASP par sa CNI :", options=df['Matricule_CNI'].values)
+        matricule_modif = st.selectbox("Sélectionnez l'ASP par sa CNI :", options=df['Matricule_CNI'].values, key="select_rh")
         if matricule_modif:
-            idx = df[df['Matricule_CNI'] == matricule_modif].index
+            idx = df[df['Matricule_CNI'] == matricule_modif].index[0]
             
             st.markdown(f"#### ✏️ Modification des informations de : {df.at[idx, 'Prénom']} {df.at[idx, 'Nom']}")
             col_m1, col_m2 = st.columns(2)
@@ -125,16 +122,10 @@ with onglet1:
                 edit_prenom = st.text_input("Prénom", value=df.at[idx, 'Prénom'])
                 edit_nom = st.text_input("Nom", value=df.at[idx, 'Nom'])
                 edit_ln = st.text_input("Lieu de Naissance", value=df.at[idx, 'Lieu_Naissance'])
-                edit_aff = st.text_input("Lieu d'affectation", value=df.at[idx, 'Lieu_Affectation'])
             with col_m2:
-                edit_reg = st.selectbox("Région", ['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Diourbel', 'Tambacounda'], index=['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Diourbel', 'Tambacounda'].index(df.at[idx, 'Région']))
+                edit_aff = st.text_input("Lieu d'affectation", value=df.at[idx, 'Lieu_Affectation'])
+                edit_reg = st.selectbox("Région", ['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Diourbel', 'Tambacounda', 'Louga', 'Fatick', 'Kolda'], index=['Dakar', 'Thiès', 'Saint-Louis', 'Ziguinchor', 'Kaolack', 'Diourbel', 'Tambacounda', 'Louga', 'Fatick', 'Kolda'].index(df.at[idx, 'Région']))
                 edit_statut = st.selectbox("Statut RH", ['Actif', 'Radié', 'Démissionnaire'], index=['Actif', 'Radié', 'Démissionnaire'].index(df.at[idx, 'Statut']))
-                
-                st.markdown("**Ajustement de la Prime**")
-                edit_has_prime = st.checkbox("Bénéficiaire d'une prime", value=bool(df.at[idx, 'Beneficie_Prime']))
-                edit_montant_prime = 0
-                if edit_has_prime:
-                    edit_montant_prime = st.number_input("Montant de la Prime (F CFA)", value=int(df.at[idx, 'Prime']), step=5000)
             
             if st.button("💾 Sauvegarder les modifications"):
                 df.at[idx, 'Prénom'] = edit_prenom
@@ -143,34 +134,50 @@ with onglet1:
                 df.at[idx, 'Lieu_Affectation'] = edit_aff
                 df.at[idx, 'Région'] = edit_reg
                 df.at[idx, 'Statut'] = edit_statut
-                df.at[idx, 'Beneficie_Prime'] = edit_has_prime
-                df.at[idx, 'Prime'] = edit_montant_prime if edit_has_prime else 0
                 
                 st.session_state.df_asp = df
-                st.success("Dossier mis à jour.")
+                st.success("Dossier administratif mis à jour.")
                 st.rerun()
 
     st.write("---")
-    st.dataframe(df[['Matricule_CNI', 'Nom', 'Prénom', 'Région', 'Lieu_Affectation', 'Beneficie_Prime', 'Prime', 'Statut']], use_container_width=True)
+    st.dataframe(df[['Matricule_CNI', 'Nom', 'Prénom', 'Région', 'Lieu_Affectation', 'Statut']], use_container_width=True)
 
 # ==============================================================================
-# ONGLET 2 : CONGÉS
+# ONGLET 2 : ATTRIBUTION DES PRIMES BY CNI
 # ==============================================================================
 with onglet2:
-    st.subheader("📅 Planification des Congés Annuuels")
-    asp_conge = st.selectbox("Sélectionnez l'ASP demandeur (Par sa CNI) :", options=df[df['Statut']=='Actif']['Matricule_CNI'].values, key="conge_box")
-    if asp_conge:
-        idx_c = df[df['Matricule_CNI'] == asp_conge].index
-        st.info(f"Solde disponible : **{df.at[idx_c, 'Conges_Restants']} jours**.")
-        jours_demandes = st.number_input("Jours à poser :", min_value=1, max_value=max(1, int(df.at[idx_c, 'Conges_Restants'])), value=1)
-        if st.button("🌴 Accorder le congé"):
-            df.at[idx_c, 'Conges_Restants'] -= jours_demandes
+    st.subheader("🏅 Bureau d'Attribution et de Gestion des Primes (DRH)")
+    prime_cni = st.selectbox("Rechercher l'ASP concerné (Par sa CNI) :", options=df['Matricule_CNI'].values, key="select_prime_tab")
+    
+    if prime_cni:
+        idx_p = df[df['Matricule_CNI'] == prime_cni].index[0]
+        st.info(f"**Agent :** {df.at[idx_p, 'Prénom']} {df.at[idx_p, 'Nom']}")
+        
+        if df.at[idx_p, 'Beneficie_Prime']:
+            st.success(f"Prime actuelle : **{df.at[idx_p, 'Prime']} F CFA**")
+        else:
+            st.warning("Cet agent ne perçoit actuellement aucune prime.")
+            
+        attribuer_prime = st.checkbox("Accorder / Maintenir une prime", value=bool(df.at[idx_p, 'Beneficie_Prime']))
+        montant_alloue = 0
+        if attribuer_prime:
+            montant_alloue = st.number_input("Montant validé par la DRH (F CFA) :", min_value=0, step=5000, value=int(df.at[idx_p, 'Prime']))
+                
+        if st.button("⚖️ Valider la décision financière"):
+            df.at[idx_p, 'Beneficie_Prime'] = attribuer_prime
+            df.at[idx_p, 'Prime'] = montant_alloue if attribuer_prime else 0
+            
             st.session_state.df_asp = df
-            st.success("Compteur mis à jour.")
+            st.success("Fiche financière ajustée.")
             st.rerun()
 
 # ==============================================================================
-# ONGLET 3 : FINANCES & FICHIERS BANQUES
+# ONGLET 3 : GESTION DES CONGÉS
 # ==============================================================================
 with onglet3:
-    st.subheader("💶 Gestion Financière Avancée")
+    st.subheader("📅 Planification des Congés Annuuels")
+    asp_conge = st.selectbox("Sélectionnez l'ASP demandeur (Par sa CNI) :", options=df[df['Statut']=='Actif']['Matricule_CNI'].values, key="conge_box")
+    if asp_conge:
+        idx_c = df[df['Matricule_CNI'] == asp_conge].index[0]
+        st.info(f"Solde disponible : **{df.at[idx_c, 'Conges_Restants']} jours**.")
+        jours_demandes = st.number_input("Jours à poser :", min_value=1, max_value=max(1, int(df.at[idx_c, 'Conges_Restants'])), value=1)
