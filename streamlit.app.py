@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import io
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
@@ -12,7 +12,7 @@ st.set_page_config(page_title="SIRH National ASP Sénégal", layout="wide")
 st.title("🇸🇳 Système d'Information des Ressources Humaines (SIRH) ASP")
 st.markdown("### Direction Générale - Direction des Ressources Humaines et de la Solde")
 
-# --- INITIALISATION DE LA MATRICE NATIONALE ---
+# --- INITIALISATION DE LA BASE DE DONNÉES EN SESSION ---
 if 'df_asp' not in st.session_state:
     cni_list = [f"123456789012{i}" for i in range(1, 11)]
     noms = ['Diop', 'Ndiaye', 'Sow', 'Fall', 'Gueye', 'Diallo', 'Faye', 'Cissé', 'Bâ', 'Sané']
@@ -41,7 +41,7 @@ if 'df_asp' not in st.session_state:
         'Nbr_Sanctions': [0] * 10,
         'Historique_Disciplinaire': ["Dossier vierge - RAS\n"] * 10,
         'Conges_Restants': [30] * 10,
-        'Statut': ["Actif"] * 10, # Actif, Inactif (Radié, Démissionnaire, Décédé)
+        'Statut': ["Actif"] * 10,
         'Motif_Sortie': ["N/A"] * 10
     })
     st.session_state.df_asp = df_init
@@ -61,15 +61,15 @@ def calculer_net(row):
 
 df['Net_A_Payer'] = df.apply(calculer_net, axis=1)
 
-# --- NAVIGATION DU SIRH ---
-ong1, ong2, ong3, ong4, ong5, ong6 = st.tabs([
+# --- NAVIGATION DU SIRH (NOMS CORRIGÉS) ---
+onglet1, onglet2, onglet3, onglet4, onglet5, onglet6 = st.tabs([
     "👤 Recrutement", "🏅 Primes", "⚖️ Discipline", "🚪 Démissions/Décès", "🗂️ Fiche & PDF", "💶 Solde Globale"
 ])
 
 # ==============================================================================
 # ONGLET 1 : RECRUTEMENT & EDITION
 # ==============================================================================
-with ong1:
+with onglet1:
     st.subheader("👤 Gestion des Entrées et États Civils")
     action = st.radio("Action :", ["Consulter/Modifier", "Nouveau Recrutement"], horizontal=True)
     
@@ -98,12 +98,13 @@ with ong1:
                     }
                     df = pd.concat([df, pd.DataFrame([nouvel_asp])], ignore_index=True)
                     st.session_state.df_asp = df
-                    st.success("Volontaire recruté avec succès."); st.rerun()
+                    st.success("Volontaire recruté avec succès.")
+                    st.rerun()
 
     elif action == "Consulter/Modifier":
         cni_m = st.selectbox("Choisir l'ASP :", options=df['Matricule_CNI'].values, key="mod_rh")
         if cni_m:
-            idx = df[df['Matricule_CNI'] == cni_m].index[0]
+            idx = df[df['Matricule_CNI'] == cni_m].index
             st.markdown(f"**Modification de l'agent :** {df.at[idx, 'Prénom']} {df.at[idx, 'Nom']} (`{df.at[idx, 'Statut']}`)")
             col1, col2 = st.columns(2)
             with col1:
@@ -114,7 +115,9 @@ with ong1:
                 e_canal = st.selectbox("Banque/Moyen", ['Orange Money', 'BOA', 'BNDE'], index=['Orange Money', 'BOA', 'BNDE'].index(df.at[idx, 'Canal_Paiement']))
             if st.button("💾 Enregistrer"):
                 df.at[idx, 'Prénom'], df.at[idx, 'Nom'], df.at[idx, 'Lieu_Affectation'], df.at[idx, 'Canal_Paiement'] = e_prenom, e_nom, e_aff, e_canal
-                st.session_state.df_asp = df; st.success("Données enregistrées."); st.rerun()
+                st.session_state.df_asp = df
+                st.success("Données enregistrées.")
+                st.rerun()
 
 # ==============================================================================
 # ONGLET 2 : ATTRIBUTION DES PRIMES
@@ -123,22 +126,24 @@ with onglet2:
     st.subheader("🏅 Bureau des Primes DRH")
     prime_cni = st.selectbox("Sélectionner l'ASP (Par CNI) :", options=df[df['Statut']=='Actif']['Matricule_CNI'].values, key="p_tab")
     if prime_cni:
-        idx_p = df[df['Matricule_CNI'] == prime_cni].index[0]
+        idx_p = df[df['Matricule_CNI'] == prime_cni].index
         st.write(f"Agent : {df.at[idx_p, 'Prénom']} {df.at[idx_p, 'Nom']} | Prime actuelle : {df.at[idx_p, 'Prime']} F")
         has_p = st.checkbox("Accorder une prime", value=bool(df.at[idx_p, 'Beneficie_Prime']))
         m_p = st.number_input("Montant (F CFA)", min_value=0, step=5000, value=int(df.at[idx_p, 'Prime'])) if has_p else 0
         if st.button("⚖️ Fixer la prime"):
             df.at[idx_p, 'Beneficie_Prime'], df.at[idx_p, 'Prime'] = has_p, m_p
-            st.session_state.df_asp = df; st.success("Prime mise à jour."); st.rerun()
+            st.session_state.df_asp = df
+            st.success("Prime mise à jour.")
+            st.rerun()
 
 # ==============================================================================
-# ONGLET 3 : CONSEIL DE DISCIPLINE (RADIATION & REINTEGRATION)
+# ONGLET 3 : CONSEIL DE DISCIPLINE
 # ==============================================================================
 with onglet3:
     st.subheader("⚖️ Greffe du Conseil de Discipline")
     disc_cni = st.selectbox("Sélectionner l'ASP convoqué :", options=df['Matricule_CNI'].values, key="d_tab")
     if disc_cni:
-        idx_d = df[df['Matricule_CNI'] == disc_cni].index[0]
+        idx_d = df[df['Matricule_CNI'] == disc_cni].index
         st.info(f"**Agent :** {df.at[idx_d, 'Prénom']} {df.at[idx_d, 'Nom']} | **Statut actuel :** `{df.at[idx_d, 'Statut']}`")
         
         type_decision = st.selectbox("Décision du Conseil :", ["Sanction Pécuniaire", "Radiation du Conseil", "Réintégration de l'Agent"])
@@ -150,7 +155,9 @@ with onglet3:
                 df.at[idx_d, 'Sanction_Discipline'] = m_sanction
                 df.at[idx_d, 'Nbr_Sanctions'] += 1
                 df.at[idx_d, 'Historique_Disciplinaire'] += f"- Sanction de {m_sanction} F pour : {cause_inc}\n"
-                st.session_state.df_asp = df; st.success("Retenue appliquée sur la solde du mois."); st.rerun()
+                st.session_state.df_asp = df
+                st.success("Retenue appliquée sur la solde du mois.")
+                st.rerun()
                 
         elif type_decision == "Radiation du Conseil":
             if st.button("🔴 Prononcer la Radiation"):
@@ -158,7 +165,9 @@ with onglet3:
                 df.at[idx_d, 'Motif_Sortie'] = "Radié (Conseil de Discipline)"
                 df.at[idx_d, 'Nbr_Sanctions'] += 1
                 df.at[idx_d, 'Historique_Disciplinaire'] += f"- RADIATION prononcée pour : {cause_inc}\n"
-                st.session_state.df_asp = df; st.error("L'agent est désormais inactif et retiré de la solde."); st.rerun()
+                st.session_state.df_asp = df
+                st.error("L'agent est désormais inactif et retiré de la solde.")
+                st.rerun()
                 
         elif type_decision == "Réintégration de l'Agent":
             if st.button("🟢 Activer la Réintégration"):
@@ -166,10 +175,11 @@ with onglet3:
                 df.at[idx_d, 'Motif_Sortie'] = "N/A"
                 df.at[idx_d, 'Sanction_Discipline'] = 0
                 df.at[idx_d, 'Historique_Disciplinaire'] += f"- REINTEGRATION DRH suite à : {cause_inc}\n"
-                st.session_state.df_asp = df; st.success("L'agent est réintégré à son poste et rétabli dans ses droits."); st.rerun()
+                st.session_state.df_asp = df
+                st.success("L'agent est réintégré à son poste.")
+                st.rerun()
 
 # ==============================================================================
 # ONGLET 4 : GESTION DES DEMISSIONS & DECES
 # ==============================================================================
 with onglet4:
-    st.subheader("🚪 Bureau des Sorties de Contingent (Démissions & Décès)")
